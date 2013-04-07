@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="libxmp.js"></script>
+<script type="text/javascript" src="audionode/audionode.js"></script>
+<script type="text/javascript">
+var context = new webkitAudioContext() || new AudioContext();
+
+var buf_get_size = function(buf_ptr) {
+  return Module.getValue(buf_ptr + 4, 'i32');
+}
+
+var buf_get_dataptr = function(buf_ptr) {
+  return Module.getValue(buf_ptr, '*');
+}
+
+var get_data = function(data_ptr, size) {
+  var i8Array = Module.HEAP8.subarray(data_ptr, data_ptr + size);
+  return new Float32Array(i8Array.buffer, data_ptr, size / 4);
+}
+
+var xmp = {
+  init: Module.cwrap('initialize_player', 'number', ['string']),
+  read: Module.cwrap('read_from_player', 'number', ['number']),
+  free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
+  free_player: Module.cwrap('free_player', 'null', ['number'])
+};
+
+var player_ptr = xmp.init("test.mod");
+if (player_ptr == 0) {
+  console.log("Player init failed");
+  return;
+}
+
+var get_buffer = function() {
+  var buf_ptr = xmp.read(player_ptr);
+  var data_ptr = buf_get_dataptr(buf_ptr);
+  var size = buf_get_size(buf_ptr);
+  if (size == 0  || data_ptr == 0) return;
+
+  var ret = get_data(data_ptr, size);
+  xmp.free_buffer(buf_ptr);
+  return ret;
+}
+
+var get_audio_source = function() {
+  var raw_audio = get_buffer();
+  if (raw_audio === undefined) return;
+
+  for (var i = 0; i < 60; i++) {
+    var new_data = get_buffer();
+    if (new_data === undefined) break;
+    var old_data = raw_audio;
+    raw_audio = new Float32Array(old_data.length + new_data.length);
+    raw_audio.set(old_data, 0);
+    raw_audio.set(new_data, old_data.length);
+  }
+  delete new_data;
+  delete old_data;
+
+  var audio_buffer = context.createBuffer(1, raw_audio.length, 44100);
+  audio_buffer.getChannelData(0).set(raw_audio);
+
+  var source = context.createBufferSource();
+  source.buffer = audio_buffer;
+  source.connect(context.destination);
+  return source;
+}
+
+var next = get_audio_source();
+var play_next = function() {
+  if (next !== undefined) {
+    var duration = next.buffer.duration;
+    setTimeout(play_next, duration * 1000);
+    next.noteOn(0);
+    next = get_audio_source();
+  }
+}
+
+play_next();
+
+</script>
+</head>
+<body>
+</body>
+</html>
+

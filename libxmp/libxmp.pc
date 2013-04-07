@@ -1,0 +1,13 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libxmp
+Description: Xmp module player library
+Version: 4.0.3
+
+Requires:
+Libs: -L${libdir}
+Cflags: -I${includedir}
+Libs.private: -lm
