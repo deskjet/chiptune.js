@@ -26,7 +26,7 @@ var xmp = {
   free_player: Module.cwrap('free_player', 'null', ['number'])
 };
 
-var player_ptr = xmp.init("test.mod");
+var player_ptr = xmp.init("utmenu.it");
 if (player_ptr == 0) {
   console.log("Player init failed");
   return;
@@ -47,7 +47,7 @@ var get_audio_source = function() {
   var raw_audio = get_buffer();
   if (raw_audio === undefined) return;
 
-  for (var i = 0; i < 60; i++) {
+  for (var i = 0; i < 120; i++) {
     var new_data = get_buffer();
     if (new_data === undefined) break;
     var old_data = raw_audio;
