@@ -27,7 +27,6 @@ var xmp = {
 };
 
 var get_buffer = function(player_ptr) {
-  var time = performance.now();
   var buf_ptr = xmp.read(player_ptr);
   var data_ptr = buf_get_dataptr(buf_ptr);
   var size = buf_get_size(buf_ptr);
@@ -35,7 +34,6 @@ var get_buffer = function(player_ptr) {
 
   var ret = get_data(data_ptr, size);
   xmp.free_buffer(buf_ptr);
-  console.log(performance.now() - time);
   return ret;
 }
 
