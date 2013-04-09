@@ -23,16 +23,11 @@ var xmp = {
   init: Module.cwrap('initialize_player', 'number', ['string']),
   read: Module.cwrap('read_from_player', 'number', ['number']),
   free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
-  free_player: Module.cwrap('free_player', 'null', ['number'])
+  free_player: Module.cwrap('free_player', 'null', ['number']),
 };
 
-var player_ptr = xmp.init("utmenu.it");
-if (player_ptr == 0) {
-  console.log("Player init failed");
-  return;
-}
-
-var get_buffer = function() {
+var get_buffer = function(player_ptr) {
+  var time = performance.now();
   var buf_ptr = xmp.read(player_ptr);
   var data_ptr = buf_get_dataptr(buf_ptr);
   var size = buf_get_size(buf_ptr);
@@ -40,15 +35,16 @@ var get_buffer = function() {
 
   var ret = get_data(data_ptr, size);
   xmp.free_buffer(buf_ptr);
+  console.log(performance.now() - time);
   return ret;
 }
 
-var get_audio_source = function() {
-  var raw_audio = get_buffer();
+var get_audio_source = function(player_ptr) {
+  var raw_audio = get_buffer(player_ptr);
   if (raw_audio === undefined) return;
 
-  for (var i = 0; i < 120; i++) {
-    var new_data = get_buffer();
+  for (var i = 0; i < 64; i++) {
+    var new_data = get_buffer(player_ptr);
     if (new_data === undefined) break;
     var old_data = raw_audio;
     raw_audio = new Float32Array(old_data.length + new_data.length);
@@ -67,18 +63,45 @@ var get_audio_source = function() {
   return source;
 }
 
-var next = get_audio_source();
-var play_next = function() {
-  if (next !== undefined) {
-    var duration = next.buffer.duration;
-    setTimeout(play_next, duration * 1000);
-    next.noteOn(0);
-    next = get_audio_source();
+var play_file = function(filename) {
+  var player_ptr = xmp.init(filename);
+  if (player_ptr == 0) return;
+
+  var source;
+  var play = function(player_ptr, first_run) {
+    if (first_run) {
+      source = get_audio_source(player_ptr);
+    }
+
+    if (!source) {
+      xmp.free_player(player_ptr);
+      return;
+    }
+
+    var duration = source.buffer.duration;
+    setTimeout(play.bind(this, player_ptr), duration * 1000);
+    source.noteOn(0);
+
+    source = get_audio_source(player_ptr);
   }
+
+  play(player_ptr, true);
 }
 
-play_next();
+var main = function() {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'utmenu.it', true);
+  xhr.responseType = 'arraybuffer';
 
+  xhr.onload = function(e) {
+    FS.createDataFile('/','foo', new Int8Array(xhr.response), true, true);
+    play_file("/foo");
+  };
+
+  xhr.send();
+}
+
+main();
 </script>
 </head>
 <body>

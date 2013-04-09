@@ -523,6 +523,7 @@ int xmp_load_module(xmp_context opaque, char *path)
 
 	INIT_LIST_HEAD(&tmpfiles_list);
 
+  /*
 	D_(D_INFO "decrunch");
 	if (decrunch(&tmpfiles_list, &f, &path, DECRUNCH_MAX) < 0)
 		goto err_depack;
@@ -530,12 +531,12 @@ int xmp_load_module(xmp_context opaque, char *path)
 	if (fstat(fileno(f), &st) < 0)
 		goto err_depack;
 
-	if (st.st_size < 256) {			/* get size after decrunch */
+	if (st.st_size < 256) {	//		get size after decrunch
 		fclose(f);
 		unlink_tempfiles(&tmpfiles_list);
 		return -XMP_ERROR_FORMAT;
 	}
-
+  */
 	split_name(path, &m->dirname, &m->basename);
 	m->filename = path;	/* For ALM, SSMT, etc */
 	m->size = st.st_size;
@@ -580,11 +581,12 @@ int xmp_load_module(xmp_context opaque, char *path)
 	load_epilogue(ctx);
 
 	return 0;
-
+  /*
     err_depack:
 	fclose(f);
 	unlink_tempfiles(&tmpfiles_list);
 	return -XMP_ERROR_DEPACK;
+	*/
 }
 
 void xmp_release_module(xmp_context opaque)

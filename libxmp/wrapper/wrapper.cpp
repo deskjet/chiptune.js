@@ -1,4 +1,9 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "wrapper.h"
+
+#define FILENAME "/tmp/modplayjs.mod"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +33,19 @@ void free_player(void* ptr) {
   if (ptr != NULL) {
     delete reinterpret_cast<player*>(ptr);
   }
+}
+
+char* write_to_file(void* ptr, int size) {
+  char* filename = FILENAME;
+  FILE* p = fopen(filename, "wb");
+  if (p == NULL) {
+    return NULL;
+  }
+  fwrite(ptr, size, 1, p);
+  fclose(p);
+  free(ptr);
+
+  return filename;
 }
 
 #ifdef __cplusplus

@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include "sys/types.h"
 
 #include "player.h"

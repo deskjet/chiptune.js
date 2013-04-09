@@ -29,6 +29,13 @@ void free_buffer(buf_wrap* ptr);
 /// \param player  pointer to the player to free
 void free_player(void* ptr);
 
+/// Write a buffer into a file and frees to buffer on success.
+///
+/// \param  ptr pointer to a buffer
+/// \param  size size in bytes of the buffer
+/// \return name of the file written or NULL in case of an error
+char* write_to_file(void* ptr, int size);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
