@@ -2,9 +2,13 @@
 <html>
 <head>
 <script type="text/javascript" src="libxmp.js"></script>
-<script type="text/javascript" src="audionode/audionode.js"></script>
 <script type="text/javascript">
-var context = new webkitAudioContext() || new AudioContext();
+
+if (webkitAudioContext) {
+  AudioContext = webkitAudioContext;
+}
+
+var context = new AudioContext();
 
 var buf_get_size = function(buf_ptr) {
   return Module.getValue(buf_ptr + 4, 'i32');
@@ -78,7 +82,7 @@ var play_file = function(filename) {
 
     var duration = source.buffer.duration;
     setTimeout(play.bind(this, player_ptr), duration * 1000);
-    source.noteOn(0);
+    source.start(0);
 
     source = get_audio_source(player_ptr);
   }
