@@ -1,112 +1,165 @@
 <!DOCTYPE html>
 <html>
 <head>
+<style>
+  * {
+    font-family: sans-serif;
+  }
+
+  #dropzone {
+    width: 300px;
+    height: 200px;
+    background-color: #eee;
+    border: 1px dashed #999;
+    margin: 0px auto;
+    display: table;
+  }
+
+  #dropzone * {
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
+    color: #aaa;
+  }
+</style>
+<script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script type="text/javascript" src="libxmp.js"></script>
 <script type="text/javascript">
 
-if (webkitAudioContext) {
-  AudioContext = webkitAudioContext;
-}
+$(function () {
+  var fileaccess = document.querySelector("#dropzone");
 
-var context = new AudioContext();
-
-var buf_get_size = function(buf_ptr) {
-  return Module.getValue(buf_ptr + 4, 'i32');
-}
-
-var buf_get_dataptr = function(buf_ptr) {
-  return Module.getValue(buf_ptr, '*');
-}
-
-var get_data = function(data_ptr, size) {
-  var i8Array = Module.HEAP8.subarray(data_ptr, data_ptr + size);
-  return new Float32Array(i8Array.buffer, data_ptr, size / 4);
-}
-
-var xmp = {
-  init: Module.cwrap('initialize_player', 'number', ['string']),
-  read: Module.cwrap('read_from_player', 'number', ['number']),
-  free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
-  free_player: Module.cwrap('free_player', 'null', ['number']),
-};
-
-var get_buffer = function(player_ptr) {
-  var buf_ptr = xmp.read(player_ptr);
-  var data_ptr = buf_get_dataptr(buf_ptr);
-  var size = buf_get_size(buf_ptr);
-  if (size == 0  || data_ptr == 0) return;
-
-  var ret = get_data(data_ptr, size);
-  xmp.free_buffer(buf_ptr);
-  return ret;
-}
-
-var get_audio_source = function(player_ptr) {
-  var raw_audio = get_buffer(player_ptr);
-  if (raw_audio === undefined) return;
-
-  for (var i = 0; i < 64; i++) {
-    var new_data = get_buffer(player_ptr);
-    if (new_data === undefined) break;
-    var old_data = raw_audio;
-    raw_audio = new Float32Array(old_data.length + new_data.length);
-    raw_audio.set(old_data, 0);
-    raw_audio.set(new_data, old_data.length);
+  fileaccess.ondrop = function(e) {
+      var file = e.dataTransfer.files[0];
+      var reader = new FileReader();
+      reader.onload = function() {
+        try {
+          FS.deleteFile("/foo")
+        } catch(err) {}
+        FS.createDataFile('/','foo', new Int8Array(reader.result), true, true);
+        play_file("/foo");
+      }
+      reader.readAsArrayBuffer(file);
+      e.preventDefault();
   }
-  delete new_data;
-  delete old_data;
+  fileaccess.ondragenter = function(e){e.preventDefault();}
+  fileaccess.ondragover = function(e){e.preventDefault();}
 
-  var audio_buffer = context.createBuffer(1, raw_audio.length, 44100);
-  audio_buffer.getChannelData(0).set(raw_audio);
 
-  var source = context.createBufferSource();
-  source.buffer = audio_buffer;
-  source.connect(context.destination);
-  return source;
-}
+  // support webkit-prefix for chrome
+  if (window.webkitAudioContext !== undefined) {
+    AudioContext = webkitAudioContext;
+  }
+  var context = new AudioContext();
 
-var play_file = function(filename) {
-  var player_ptr = xmp.init(filename);
-  if (player_ptr == 0) return;
+  var xmp = {
+    init: Module.cwrap('initialize_player', 'number', ['string']),
+    read: Module.cwrap('read_from_player', 'number', ['number']),
+    free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
+    free_player: Module.cwrap('free_player', 'null', ['number']),
+  };
 
-  var source;
-  var play = function(player_ptr, first_run) {
-    if (first_run) {
+  // Read data from the player and pack it into a suitable format
+  var get_audio_source = function(player_ptr) {
+    // Helper: Read one chunk from player
+    var get_buffer = function(player_ptr) {
+      // Helper: Retreive data from buffer as Float32Array
+      var get_data = function(buf_ptr) {
+        var data_ptr = Module.getValue(buf_ptr, '*');
+        var size = Module.getValue(buf_ptr + 4, 'i32');
+        if (size == 0  || data_ptr == 0) return;
+
+        var i8Array = Module.HEAP8.subarray(data_ptr, data_ptr + size);
+        return new Float32Array(i8Array.buffer, data_ptr, size / 4);
+      }
+
+      var buf_ptr = xmp.read(player_ptr);
+      var ret = get_data(buf_ptr);
+      xmp.free_buffer(buf_ptr);
+      return ret;
+    }
+
+    // Append a number of audio chunks
+    var raw_audio = get_buffer(player_ptr);
+    if (raw_audio === undefined) return;
+
+    for (var i = 0; i < 64; i++) {
+      var new_data = get_buffer(player_ptr);
+      if (new_data === undefined) break;
+      var old_data = raw_audio;
+      raw_audio = new Float32Array(old_data.length + new_data.length);
+      raw_audio.set(old_data, 0);
+      raw_audio.set(new_data, old_data.length);
+    }
+    delete new_data;
+    delete old_data;
+
+    // Create a JS AudioBuffer
+    var audio_buffer = context.createBuffer(1, raw_audio.length, 44100);
+    audio_buffer.getChannelData(0).set(raw_audio);
+
+    // Put it into a JS BufferSource
+    var source = context.createBufferSource();
+    source.buffer = audio_buffer;
+    source.connect(context.destination);
+    return source;
+  }
+
+  // Load and play a certain file until it finishes (recurses)
+  var play_file = function(filename) {
+    // Initialize player
+    var player_ptr = xmp.init(filename);
+    if (player_ptr == 0) return;
+
+    var source;
+    // Get audio data and play it rather smoothly!
+    var play = function(player_ptr, first_run) {
+      // Fill buffer on first run
+      if (first_run) {
+        source = get_audio_source(player_ptr);
+      }
+
+      // no more data -> clean up
+      if (!source) {
+        xmp.free_player(player_ptr);
+        return;
+      }
+
+      // schedule next chunk of audio
+      var duration = source.buffer.duration;
+      setTimeout(play.bind(this, player_ptr), duration * 1000);
+
+      // play!
+      source.start(0);
+
+      // fill buffer while playing
       source = get_audio_source(player_ptr);
     }
 
-    if (!source) {
-      xmp.free_player(player_ptr);
-      return;
-    }
-
-    var duration = source.buffer.duration;
-    setTimeout(play.bind(this, player_ptr), duration * 1000);
-    source.start(0);
-
-    source = get_audio_source(player_ptr);
+    // Start playing
+    play(player_ptr, true);
   }
 
-  play(player_ptr, true);
-}
+  var play_remote_file = function(path) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', path, true);
+    xhr.responseType = 'arraybuffer';
 
-var main = function() {
-  var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'utmenu.it', true);
-  xhr.responseType = 'arraybuffer';
+    xhr.onload = function(e) {
+      FS.createDataFile('/','foo', new Int8Array(xhr.response), true, true);
+      play_file("/foo");
+    };
 
-  xhr.onload = function(e) {
-    FS.createDataFile('/','foo', new Int8Array(xhr.response), true, true);
-    play_file("/foo");
-  };
+    xhr.send();
+  }
 
-  xhr.send();
-}
-
-main();
+});
 </script>
 </head>
 <body>
+  <div id="dropzone">
+    <h3>Drop your module here!</h3>
+  </div>
 </body>
 </html>
 
