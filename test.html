@@ -113,7 +113,7 @@ $(function () {
 
     var source;
     // Get audio data and play it rather smoothly!
-    var play = function(player_ptr, first_run) {
+    var play = function(player_ptr, last_chunk, first_run) {
       // Fill buffer on first run
       if (first_run) {
         source = get_audio_source(player_ptr);
@@ -125,19 +125,20 @@ $(function () {
         return;
       }
 
-      // schedule next chunk of audio
-      var duration = source.buffer.duration;
-      setTimeout(play.bind(this, player_ptr), duration * 1000);
 
       // play!
-      source.start(0);
+      var duration = source.buffer.duration;
+      var last_chunk = last_chunk + duration;
+      source.start(last_chunk);
+
+      setTimeout(play.bind(this, player_ptr, last_chunk), (duration * 1000) / 2);
 
       // fill buffer while playing
       source = get_audio_source(player_ptr);
     }
 
     // Start playing
-    play(player_ptr, true);
+    play(player_ptr, 0, true);
   }
 
   var play_remote_file = function(path) {
