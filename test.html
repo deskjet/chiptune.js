@@ -20,7 +20,20 @@
     vertical-align: middle;
     text-align: center;
     color: #aaa;
+    z-index: 300;
+    position: relative;
   }
+
+  #canvas {
+    height: 200px;
+    width: 300px;
+    margin: 0px auto;
+    display: block;
+    position: relative;
+    top: -201px;
+    z-index: 200;
+  }
+
 </style>
 <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
 <script type="text/javascript" src="libxmp.js"></script>
@@ -37,7 +50,13 @@ $(function () {
           FS.deleteFile("/foo")
         } catch(err) {}
         FS.createDataFile('/','foo', new Int8Array(reader.result), true, true);
-        play_file("/foo");
+        player_ptr = xmp.play_file("/foo");
+        $('#pause').click(function() {
+          xmp.pause(player_ptr);
+        });
+        $('#resume').click(function() {
+          xmp.resume(player_ptr);
+        });
       }
       reader.readAsArrayBuffer(file);
       e.preventDefault();
@@ -45,19 +64,35 @@ $(function () {
   fileaccess.ondragenter = function(e){e.preventDefault();}
   fileaccess.ondragover = function(e){e.preventDefault();}
 
-
   // support webkit-prefix for chrome
   if (window.webkitAudioContext !== undefined) {
     AudioContext = webkitAudioContext;
   }
   var context = new AudioContext();
+  var analyser = context.createAnalyser();
+  analyser.connect(context.destination);
+  analyser.fftSize = 128;
 
-  var xmp = {
-    init: Module.cwrap('initialize_player', 'number', ['string']),
-    read: Module.cwrap('read_from_player', 'number', ['number']),
-    free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
-    free_player: Module.cwrap('free_player', 'null', ['number']),
-  };
+  var setup = true;
+
+  function update() {
+    requestAnimationFrame(update);
+    if(!setup) return;
+    gfx.clearRect(0,0,800,600);
+    gfx.fillStyle = '#eee';
+    gfx.fillRect(0,0,800,600);
+
+    var data = new Uint8Array(analyser.frequencyBinCount);
+    analyser.getByteFrequencyData(data);
+    gfx.fillStyle = '#555';
+    for(var i=0; i<data.length; i++) {
+        gfx.fillRect(1+i*5, data[i], 4, (data[i] / 255) * 90 + 20);
+    }
+  }
+
+  var canvas = document.getElementById('canvas');
+  gfx = canvas.getContext('2d');
+  requestAnimationFrame(update);
 
   // Read data from the player and pack it into a suitable format
   var get_audio_source = function(player_ptr) {
@@ -101,45 +136,76 @@ $(function () {
     // Put it into a JS BufferSource
     var source = context.createBufferSource();
     source.buffer = audio_buffer;
-    source.connect(context.destination);
+    source.connect(analyser);
     return source;
   }
 
-  // Load and play a certain file until it finishes (recurses)
-  var play_file = function(filename) {
-    // Initialize player
-    var player_ptr = xmp.init(filename);
-    if (player_ptr == 0) return;
-
-    var source;
-    // Get audio data and play it rather smoothly!
-    var play = function(player_ptr, last_chunk, first_run) {
+  var xmp = {
+    init: Module.cwrap('initialize_player', 'number', ['string']),
+    read: Module.cwrap('read_from_player', 'number', ['number']),
+    free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
+    free_player: Module.cwrap('free_player', 'null', ['number']),
+    player_data: {},
+    get_audio_source: get_audio_source,
+    play: function(player_ptr, last_chunk, first_run) {
       // Fill buffer on first run
       if (first_run) {
-        source = get_audio_source(player_ptr);
+        xmp.player_data[player_ptr] = {};
+        xmp.player_data[player_ptr].next_src = xmp.get_audio_source(player_ptr);
       }
 
       // no more data -> clean up
-      if (!source) {
+      if (!xmp.player_data[player_ptr].next_src) {
         xmp.free_player(player_ptr);
         return;
       }
 
-
       // play!
-      var duration = source.buffer.duration;
-      var last_chunk = last_chunk + duration;
-      source.start(last_chunk);
+      if (!xmp.player_data[player_ptr].pause) {
+        var duration = xmp.player_data[player_ptr].next_src.buffer.duration;
+        var last_chunk = last_chunk + duration;
+        xmp.player_data[player_ptr].last_src = xmp.player_data[player_ptr].current_src;
+        xmp.player_data[player_ptr].current_src = xmp.player_data[player_ptr].next_src;
+        xmp.player_data[player_ptr].current_src.start(last_chunk);
 
-      setTimeout(play.bind(this, player_ptr, last_chunk), (duration * 1000) / 2);
+        xmp.player_data[player_ptr].current_src.timeScheduled = last_chunk;
 
-      // fill buffer while playing
-      source = get_audio_source(player_ptr);
+        console.log(last_chunk);
+
+        // schedule next chunk
+        setTimeout(xmp.play.bind(this, player_ptr, last_chunk), first_run ? (duration * 1000) / 2 : (duration * 1000));
+
+        // fill buffer while playing
+        xmp.player_data[player_ptr].next_src = xmp.get_audio_source(player_ptr);
+      }
+    },
+    pause: function(player_ptr) {
+      xmp.player_data[player_ptr].pause = context.currentTime;
+      xmp.player_data[player_ptr].last_src.stop(0);
+      xmp.player_data[player_ptr].current_src.stop(0);
+      xmp.player_data[player_ptr].next_src.stop(0);
+    },
+    resume: function(player_ptr) {
+      var current_offset = context.currentTime - xmp.player_data[player_ptr].current_src.timeScheduled;
+
+      if (current_offset < xmp.player_data[player_ptr].current_src.buffer.duration) {
+        var new_src = context.createBufferSource();
+        new_src.buffer = xmp.player_data[player_ptr].current_src.buffer;
+        new_src.start(0);
+      }
+      xmp.player_data[player_ptr].pause = false;
+      xmp.play(player_ptr, 0, false);
+    },
+    play_file: function(filename) {
+      // Initialize player
+      var player_ptr = xmp.init(filename);
+      if (player_ptr == 0) return;
+
+      // Start playing
+      xmp.play(player_ptr, context.currentTime, true);
+      return player_ptr;
     }
-
-    // Start playing
-    play(player_ptr, 0, true);
-  }
+  };
 
   var play_remote_file = function(path) {
     var xhr = new XMLHttpRequest();
@@ -148,7 +214,7 @@ $(function () {
 
     xhr.onload = function(e) {
       FS.createDataFile('/','foo', new Int8Array(xhr.response), true, true);
-      play_file("/foo");
+      var player_ptr = xmp.play_file("/foo");
     };
 
     xhr.send();
@@ -161,6 +227,9 @@ $(function () {
   <div id="dropzone">
     <h3>Drop your module here!</h3>
   </div>
+  <canvas id="canvas"></canvas>
+  <button id="pause">Pause</button>
+  <button id="resume">Resume</button>
 </body>
 </html>
 
