@@ -191,6 +191,7 @@ $(function () {
       if (current_offset < xmp.player_data[player_ptr].current_src.buffer.duration) {
         var new_src = context.createBufferSource();
         new_src.buffer = xmp.player_data[player_ptr].current_src.buffer;
+        new_src.connect(analyser);
         new_src.start(0);
       }
       xmp.player_data[player_ptr].pause = false;
