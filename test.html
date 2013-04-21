@@ -163,14 +163,12 @@ $(function () {
       // play!
       if (!xmp.player_data[player_ptr].pause) {
         var duration = xmp.player_data[player_ptr].next_src.buffer.duration;
-        var last_chunk = last_chunk + duration;
+        var last_chunk = first_run ? context.currentTime : last_chunk + duration;
         xmp.player_data[player_ptr].last_src = xmp.player_data[player_ptr].current_src;
         xmp.player_data[player_ptr].current_src = xmp.player_data[player_ptr].next_src;
+
         xmp.player_data[player_ptr].current_src.start(last_chunk);
-
         xmp.player_data[player_ptr].current_src.timeScheduled = last_chunk;
-
-        console.log(last_chunk);
 
         // schedule next chunk
         setTimeout(xmp.play.bind(this, player_ptr, last_chunk), first_run ? (duration * 1000) / 2 : (duration * 1000));
