@@ -1,0 +1,45 @@
+<html>
+<head>
+  <script type="text/javascript" src="libxmp.js"></script>
+  <script type="text/javascript" src="chiptune.js"></script>
+
+  <script type="text/javascript">
+    // support webkit-prefix for chrome
+    if (window.webkitAudioContext !== undefined) {
+      AudioContext = webkitAudioContext;
+    }
+
+    var context = new AudioContext();
+
+    var player = new ChiptunePlayer(context.destination);
+
+    window.onload = function() {
+      document.getElementById("load").onclick = function() {
+        player.load("utmenu.it", function(err) {
+          if (err) { return console.log(err) };
+
+          document.getElementById("play").onclick = function() {
+            player.play();
+          }
+          document.getElementById("pause").onclick = function() {
+            player.pause();
+          }
+          document.getElementById("resume").onclick = function() {
+            player.resume();
+          }
+          document.getElementById("unload").onclick = function() {
+            player.unload();
+          }
+        });
+      }
+    }
+  </script>
+</head>
+<body>
+  <button id="load">Load</button>
+  <button id="play">Play</button>
+  <button id="pause">Pause</button>
+  <button id="resume">Resume</button>
+  <button id="unload">Unload</button>
+</body>
+</html>
