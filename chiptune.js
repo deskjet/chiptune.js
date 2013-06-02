@@ -20,11 +20,11 @@ ChiptunePlayer.prototype.load = function load(input, cb) {
   }.bind(this);
 
   if (input instanceof File) {
+    var filename = this.generateFilename();
+    this.path = "/" + filename;
+  
     var reader = new FileReader();
       reader.onload = function() {
-        var filename = this.generateFilename();
-        this.path = "/" + filename;
-
         FS.createDataFile('/', filename, new Int8Array(reader.result), true, true);
         onFileReady();
       }
@@ -80,7 +80,13 @@ ChiptunePlayer.prototype.resume = function() {
   this.xmp.resume.bind(this)(this.player_ptr);
 };
 
+ChiptunePlayer.prototype.isPaused = function() {
+	return this.xmp.isPaused.bind(this)(this.player_ptr);
+};
 
+ChiptunePlayer.prototype.isStopped = function() {
+	return this.xmp.isStopped.bind(this)(this.player_ptr);
+};
 
 ChiptunePlayer.prototype.xmp = {
   init: Module.cwrap('initialize_player', 'number', ['string']),
@@ -191,14 +197,29 @@ ChiptunePlayer.prototype.xmp = {
         var new_src = context.createBufferSource();
         new_src.buffer = this.xmp.player_data[player_ptr].current_src.buffer;
         new_src.connect(this.output);
-        new_src.start(0);
+        new_src.start(current_offset);
       }
 
       // unpause
       this.xmp.player_data[player_ptr].pause = undefined;
 
       // continue normally
-      this.xmp.play.bind(this)(player_ptr, 0, false);
+      this.xmp.play.bind(this)(player_ptr, current_offset, false);
     }
+  },
+  isPaused: function(player_ptr) {
+	try {
+		return this.xmp.player_data[player_ptr].pause ? true : false;
+	} catch (err) {
+		return false;
+	}
+  },
+  
+  isStopped: function(player_ptr) {
+	try {
+		return this.xmp.player_data[player_ptr].stop ? true : false;
+	} catch (err) {
+		return true;
+	}
   }
 };
