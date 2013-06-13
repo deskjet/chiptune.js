@@ -73,6 +73,7 @@ textarea {
 body {
 	background-color: #FF5C00;
 	font-family: amiga;
+  overflow: hidden;
 }
 
 #headphones {
@@ -88,7 +89,7 @@ body {
 
 #content {
 	position: relative;
-	top: -40em;
+	top: -45em;
 }
 
 #headline {
@@ -99,10 +100,18 @@ body {
 	padding-left: 0.5em;
 	text-align: center;
 }
+
 #controls {
 	position: relative;
 	top: 10em;
 	text-align: center;
+}
+
+#info {
+  background-color: rgba(0,0,0,0.8);
+  color: white;
+  padding: 1em;
+  font-size: 16px;
 }
 
 .control {
