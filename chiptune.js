@@ -20,11 +20,11 @@ ChiptunePlayer.prototype.load = function load(input, cb) {
   }.bind(this);
 
   if (input instanceof File) {
+    var filename = this.generateFilename();
+    this.path = "/" + filename;
+
     var reader = new FileReader();
       reader.onload = function() {
-        var filename = this.generateFilename();
-        this.path = "/" + filename;
-
         FS.createDataFile('/', filename, new Int8Array(reader.result), true, true);
         onFileReady();
       }
@@ -48,6 +48,8 @@ ChiptunePlayer.prototype.load = function load(input, cb) {
   }
 };
 
+
+// clean up; player will be useless after this
 ChiptunePlayer.prototype.unload = function() {
   var initialized = this.xmp.player_data[this.player_ptr] || false;
   var paused = this.xmp.player_data[this.player_ptr].pause;
@@ -68,19 +70,36 @@ ChiptunePlayer.prototype.unload = function() {
   }
 };
 
+// play if not started / resume if paused
 ChiptunePlayer.prototype.play = function() {
-  this.xmp.play.bind(this)(this.player_ptr, 0, true);
+  if (this.isPaused() && !this.isStopped()) {
+    this.resume();
+  } else if (this.isStopped()) {
+    this.xmp.play.bind(this)(this.player_ptr, 0, true);
+  }
 };
 
+// pause playing
 ChiptunePlayer.prototype.pause = function() {
   this.xmp.pause.bind(this)(this.player_ptr);
 };
 
+// resume from pause (you probably want to user play())
 ChiptunePlayer.prototype.resume = function() {
   this.xmp.resume.bind(this)(this.player_ptr);
 };
 
 
+// true if player paused
+ChiptunePlayer.prototype.isPaused = function() {
+  return this.xmp.isPaused.bind(this)(this.player_ptr);
+};
+
+
+// true if player stopped or hasn't ever started
+ChiptunePlayer.prototype.isStopped = function() {
+  return this.xmp.isStopped.bind(this)(this.player_ptr);
+};
 
 ChiptunePlayer.prototype.xmp = {
   init: Module.cwrap('initialize_player', 'number', ['string']),
@@ -132,7 +151,7 @@ ChiptunePlayer.prototype.xmp = {
     source.connect(this.output);
     return source;
   },
-  play: function(player_ptr, last_chunk, first_run) {
+  play: function(player_ptr, last_chunk, first_run, fixed_time) {
     // Fill buffer on first run
     if (first_run) {
       this.xmp.player_data[player_ptr] = {};
@@ -156,6 +175,9 @@ ChiptunePlayer.prototype.xmp = {
     if (!this.xmp.player_data[player_ptr].pause) {
       var duration = this.xmp.player_data[player_ptr].next_src.buffer.duration;
       var last_chunk = first_run ? context.currentTime : last_chunk + duration;
+    if (fixed_time) {
+    last_chunk = fixed_time;
+    }
       this.xmp.player_data[player_ptr].last_src = this.xmp.player_data[player_ptr].current_src;
       this.xmp.player_data[player_ptr].current_src = this.xmp.player_data[player_ptr].next_src;
 
@@ -184,21 +206,38 @@ ChiptunePlayer.prototype.xmp = {
     // only resume if paused and not stopped
     if (this.xmp.player_data[player_ptr] && this.xmp.player_data[player_ptr].pause && !this.xmp.player_data[player_ptr].stop) {
       // calculate point in buffer at the time the player paused
-      var current_offset = context.currentTime - this.xmp.player_data[player_ptr].current_src.timeScheduled;
+      var current_offset = this.xmp.player_data[player_ptr].pause - this.xmp.player_data[player_ptr].current_src.timeScheduled;
+    var start_time = 0;
 
       // play buffer from calculated point
-      if (current_offset < this.xmp.player_data[player_ptr].current_src.buffer.duration) {
+      if (current_offset > 0 && current_offset < this.xmp.player_data[player_ptr].current_src.buffer.duration) {
         var new_src = context.createBufferSource();
         new_src.buffer = this.xmp.player_data[player_ptr].current_src.buffer;
         new_src.connect(this.output);
-        new_src.start(0);
+        new_src.start(0, current_offset);
+      start_time = context.currentTime + this.xmp.player_data[player_ptr].current_src.buffer.duration - current_offset;
       }
 
       // unpause
       this.xmp.player_data[player_ptr].pause = undefined;
 
       // continue normally
-      this.xmp.play.bind(this)(player_ptr, 0, false);
+      this.xmp.play.bind(this)(player_ptr, 0, false, start_time);
+    }
+  },
+  isPaused: function(player_ptr) {
+    try {
+      return this.xmp.player_data[player_ptr].pause ? true : false;
+    } catch (err) {
+      return false;
+    }
+  },
+
+  isStopped: function(player_ptr) {
+    try {
+      return this.xmp.player_data[player_ptr].stop ? true : false;
+    } catch (err) {
+      return true;
     }
   }
 };
