@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html class="no-js">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title></title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width">
+
+        <link rel="stylesheet" href="css/normalize.min.css">
+        <link rel="stylesheet" href="css/main.css">
+    
+    <script type="text/javascript" src="js/libxmp.js"></script>
+    <script type="text/javascript" src="js/chiptune.js"></script>
+    <script type="text/javascript">
+      // support webkit-prefix for chrome (and friends)
+      if (window.webkitAudioContext !== undefined) {
+        AudioContext = webkitAudioContext;
+      }
+      // support moz-prefix for Firefox (and friends)
+      if (window.mozAudioContext !== undefined) {
+        AudioContext = mozAudioContext;
+      }
+
+      var context = new AudioContext();
+      var player = new ChiptunePlayer(context.destination);
+      
+      window.onload = function() {
+        document.getElementById("play").onclick = function() {
+          player.play();
+        }
+        document.getElementById("pause").onclick = function() {
+          player.pause();
+        }
+        
+        var fileaccess = document.querySelector("*");
+        fileaccess.ondrop = function(e) {
+          var file = e.dataTransfer.files[0];
+          try { player.unload(); } catch(err) {};
+          player.load(file, function() {
+            document.querySelector(".loadedfile").innerHTML = file.name;
+          });
+          e.preventDefault();
+        }
+        fileaccess.ondragenter = function(e){e.preventDefault();}
+        fileaccess.ondragover = function(e){e.preventDefault();}
+      }
+    </script>
+
+        <!--[if lt IE 9]>
+            <script src="js/vendor/html5-3.6-respond-1.1.0.min.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+    <div id="headphones"></div>
+    <div id="content">
+      <div id="headline"><span>chiptune.js</span></div>
+      <div id="controls">
+        <span class="loadedfile">nothing loaded</span><br>
+        <a id="play" class="control"></a>
+        <a id="pause" class="control"></a>
+      </div>
+    </div>
+
+        <script src="js/main.js"></script>
+    </body>
+</html>
