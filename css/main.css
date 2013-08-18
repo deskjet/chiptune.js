@@ -67,9 +67,9 @@ textarea {
 
 * {
 	-webkit-user-select: none;
-	cursor: default;
+  cursor: default;
 }
-   
+
 body {
 	background-color: #FF5C00;
 	font-family: amiga;
@@ -143,8 +143,19 @@ body {
 	background-repeat: no-repeat;
 }
 
-.playing {
-	
+#demosong {
+  font-size: 75%;
+  text-align: center;
+}
+
+#demosong a {
+  border-bottom: 1px solid black;
+}
+
+#demosong a:hover {
+  color: white;
+  border-color: white;
+  cursor: pointer;
 }
 
 /* ==========================================================================

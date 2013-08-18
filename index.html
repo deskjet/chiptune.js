@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html class="no-js">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-        <title></title>
-        <meta name="description" content="">
-        <meta name="viewport" content="width=device-width">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
 
-        <link rel="stylesheet" href="css/normalize.min.css">
-        <link rel="stylesheet" href="css/main.css">
-    
-    <script type="text/javascript" src="js/libxmp.js"></script>
-    <script type="text/javascript" src="js/chiptune.js"></script>
+    <link rel="stylesheet" href="css/normalize.min.css">
+    <link rel="stylesheet" href="css/main.css">
+
+    <script type="text/javascript" src="https://rawgithub.com/deskjet/chiptune.js/master/libxmp.js"></script>
+    <script type="text/javascript" src="https://rawgithub.com/deskjet/chiptune.js/master/chiptune.js"></script>
     <script type="text/javascript">
       // support webkit-prefix for chrome (and friends)
       if (window.webkitAudioContext !== undefined) {
@@ -24,7 +24,7 @@
 
       var context = new AudioContext();
       var player = new ChiptunePlayer(context.destination);
-      
+
       window.onload = function() {
         document.getElementById("play").onclick = function() {
           player.play();
@@ -32,7 +32,7 @@
         document.getElementById("pause").onclick = function() {
           player.pause();
         }
-        
+
         var fileaccess = document.querySelector("*");
         fileaccess.ondrop = function(e) {
           var file = e.dataTransfer.files[0];
@@ -44,19 +44,23 @@
         }
         fileaccess.ondragenter = function(e){e.preventDefault();}
         fileaccess.ondragover = function(e){e.preventDefault();}
+
+        var demolink = document.querySelector("#demosong");
+        demolink.onclick = function() {
+          try { player.unload(); } catch(err) {};
+          player.load("tunes/mysteristerium.mod", function() {
+            document.querySelector(".loadedfile").innerHTML = "mysteristerium.mod";
+          });
+        }
       }
     </script>
-
-        <!--[if lt IE 9]>
-            <script src="js/vendor/html5-3.6-respond-1.1.0.min.js"></script>
-        <![endif]-->
-    </head>
-    <body>
+  </head>
+  <body>
     <div id="headphones"></div>
     <div id="content">
       <div id="info">
-        <p>Please note: chiptune.js currently only works in Google Chrome!<p>
-        <p>Usage: Drop any module files (.mod, .xm, .it, etc.) on this page and hit play!<p>
+        <p>Please note: chiptune.js currently works best in Google Chrome!</p>
+        <p>Usage: Drop any module file (.mod, .xm, .it, etc.) on this page and hit play!</p>
       </div>
       <div id="headline"><span>chiptune.js</span></div>
       <div id="controls">
@@ -64,8 +68,7 @@
         <a id="play" class="control"></a>
         <a id="pause" class="control"></a>
       </div>
+      <div id="demosong"><a herf="#">Load demo song<br>(mysterysterium by maktone)</a></div>
     </div>
-
-        <script src="js/main.js"></script>
-    </body>
+  </body>
 </html>
