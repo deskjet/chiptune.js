@@ -24,11 +24,11 @@ ChiptunePlayer.prototype.load = function load(input, cb) {
     this.path = "/" + filename;
 
     var reader = new FileReader();
-      reader.onload = function() {
-        FS.createDataFile('/', filename, new Int8Array(reader.result), true, true);
-        onFileReady();
-      }
-      reader.readAsArrayBuffer(input);
+    reader.onload = function() {
+      FS.createDataFile('/', filename, new Int8Array(reader.result), true, true);
+      onFileReady();
+    }
+    reader.readAsArrayBuffer(input);
   }
 
   if (typeof input === "string") {
@@ -130,7 +130,7 @@ ChiptunePlayer.prototype.xmp = {
     var raw_audio = get_buffer(player_ptr);
     if (raw_audio === undefined) return;
 
-    for (var i = 0; i < 64; i++) {
+    for (var i = 0; i < 19; i++) {
       var new_data = get_buffer(player_ptr);
       if (new_data === undefined) break;
       var old_data = raw_audio;
@@ -151,41 +151,39 @@ ChiptunePlayer.prototype.xmp = {
     source.connect(this.output);
     return source;
   },
-  play: function(player_ptr, last_chunk, first_run, fixed_time) {
+  play: function(player_ptr, last_chunk_start, first_run, fixed_time) {
     // Fill buffer on first run
     if (first_run) {
       this.xmp.player_data[player_ptr] = {};
-      this.xmp.player_data[player_ptr].next_src = this.xmp.get_audio_source.bind(this, player_ptr)();
+      this.xmp.player_data[player_ptr].next_src = this.xmp.get_audio_source.bind(this)(player_ptr);
     }
 
-    // Check for stop-flag
-    if (this.xmp.player_data[player_ptr].stop === true) {
+    // Check for stop-flag or no more data
+    // -> clean up
+    if (this.xmp.player_data[player_ptr].stop === true
+        || this.xmp.player_data[player_ptr].next_src === undefined) {
       this.xmp.free_player(this.player_ptr);
       delete this.xmp.player_data[player_ptr];
       return;
     }
 
-    // no more data -> clean up
-    if (!this.xmp.player_data[player_ptr].next_src) {
-      this.xmp.free_player(player_ptr);
-      return;
-    }
-
     // play!
     if (!this.xmp.player_data[player_ptr].pause) {
-      var duration = this.xmp.player_data[player_ptr].next_src.buffer.duration;
-      var last_chunk = first_run ? context.currentTime : last_chunk + duration;
-    if (fixed_time) {
-    last_chunk = fixed_time;
-    }
+      var last_chunk_duration = first_run ? 0 : this.xmp.player_data[player_ptr].current_src.buffer.duration;
+      var current_chunk_start = first_run ? context.currentTime : last_chunk_start + last_chunk_duration;
+      if (fixed_time) {
+        current_chunk_start = fixed_time;
+      }
       this.xmp.player_data[player_ptr].last_src = this.xmp.player_data[player_ptr].current_src;
       this.xmp.player_data[player_ptr].current_src = this.xmp.player_data[player_ptr].next_src;
 
-      this.xmp.player_data[player_ptr].current_src.start(last_chunk);
-      this.xmp.player_data[player_ptr].current_src.timeScheduled = last_chunk;
+      this.xmp.player_data[player_ptr].current_src.start(current_chunk_start);
+      this.xmp.player_data[player_ptr].current_src.timeScheduled = current_chunk_start;
 
       // schedule next chunk
-      var timerId = setTimeout(this.xmp.play.bind(this, player_ptr, last_chunk), first_run ? (duration * 1000) / 2 : (duration * 1000));
+      var current_chunk_duration = this.xmp.player_data[player_ptr].current_src.buffer.duration;
+      var next_play = first_run ? (current_chunk_duration * 1000) / 2 : (current_chunk_duration * 1000);
+      var timerId = setTimeout(this.xmp.play.bind(this, player_ptr, current_chunk_start), next_play);
       this.xmp.player_data[player_ptr].timerId = timerId;
 
       // fill buffer while playing
