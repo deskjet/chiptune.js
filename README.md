@@ -1,6 +1,6 @@
 # Chiptune.js
 
-This is a javascript library that can play module music files. It is based on [libxmp](https://github.com/cmatsuoka/libxmp) a C library. To translate libxmp into Javascript [emscripten](https://github.com/kripken/emscripten) was used. Audio output is implemented with the Web Audio API as specified by W3C.
+This is a javascript library that can play module music files. It is based on the [libxmp](https://github.com/cmatsuoka/libxmp) C library. To translate libxmp into Javascript [emscripten](https://github.com/kripken/emscripten) was used. Audio output is implemented with the Web Audio API as specified by W3C.
 
 ## Features
 
@@ -9,6 +9,14 @@ This is a javascript library that can play module music files. It is based on [l
 * Pause/Resume
 * Support for Google Chrome (also future Firefox versions)
 * Load local (HTML5) and remote files (XHR2)
+
+## To do
+
+* Stereo playback
+* Looping mode
+* Module comment text
+* Playback information (e.g. position, speed, bpm)
+* Mixer settings (e.g. sampling rate, interpolation, resolution)
 
 ## Demo
 
