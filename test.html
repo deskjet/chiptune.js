@@ -1,0 +1,57 @@
+<html>
+<head>
+  <script type="text/javascript" src="libxmp.js"></script>
+  <script type="text/javascript" src="chiptune.js"></script>
+
+  <script type="text/javascript">
+    // support webkit-prefix for chrome
+    if (window.webkitAudioContext !== undefined) {
+      AudioContext = webkitAudioContext;
+    }
+
+    var context = new AudioContext();
+
+    var player = new ChiptunePlayer(context.destination);
+
+    var playClicked = function() {
+      player.play();
+    };
+
+    var pauseClicked = function() {
+      player.pause();
+    };
+
+    var resumeClicked = function() {
+      player.resume();
+    };
+
+    var unloadClicked = function() {
+      player.unload();
+      document.getElementById("play").removeEventListener('click', playClicked, false);
+      document.getElementById("pause").removeEventListener('click', pauseClicked, false);
+      document.getElementById("resume").removeEventListener('click', resumeClicked, false);
+      document.getElementById("unload").removeEventListener('click', unloadClicked, false);
+    };
+
+    window.onload = function() {
+      document.getElementById("files").addEventListener('change', function(evt) {
+        player.load(evt.target.files[0], function(err) {
+          if (err) { return console.log(err) };
+
+          document.getElementById("play").addEventListener('click', playClicked, false);
+          document.getElementById("pause").addEventListener('click', pauseClicked, false);
+          document.getElementById("resume").addEventListener('click', resumeClicked, false);
+          document.getElementById("unload").addEventListener('click', unloadClicked, false);
+        });
+      }, false);
+    }
+  </script>
+</head>
+<body>
+  <input type="file" id="files" name="files"/>
+  <button id="play">Play</button>
+  <button id="pause">Pause</button>
+  <button id="resume">Resume</button>
+  <button id="unload">Unload</button>
+</body>
+</html>
