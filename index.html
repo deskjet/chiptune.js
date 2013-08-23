@@ -32,6 +32,9 @@
         document.getElementById("pause").onclick = function() {
           player.pause();
         }
+        document.getElementById("loop").onclick = function() {
+          player.setLooping(this.checked);
+        }
 
         var fileaccess = document.querySelector("*");
         fileaccess.ondrop = function(e) {
@@ -67,6 +70,8 @@
         <span class="loadedfile">nothing loaded</span><br>
         <a id="play" class="control"></a>
         <a id="pause" class="control"></a>
+        <input type="checkbox" id="loop"></a>
+        <label for="loop" class="control"></label>
       </div>
       <div id="demosong"><a herf="#">Load demo song<br>(mysterysterium by maktone)</a></div>
     </div>
