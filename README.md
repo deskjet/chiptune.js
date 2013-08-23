@@ -13,7 +13,7 @@ This is a javascript library that can play module music files. It is based on th
 ## To do
 
 * Stereo playback
-* Looping mode
+* ~~Looping mode~~
 * Module comment text
 * Playback information (e.g. position, speed, bpm)
 * Mixer settings (e.g. sampling rate, interpolation, resolution)

@@ -17,7 +17,7 @@ void* initialize_player(char* filename);
 ///
 /// \param player  the player to read from (initialized by initialize_player())
 /// \return a buffer  containing raw music and its size
-buf_wrap* read_from_player(void* ptr);
+buf_wrap* read_from_player(void* ptr, bool loop);
 
 /// Free a buffer returned by read_from_player().
 ///

@@ -19,9 +19,9 @@ void* initialize_player(char* filename) {
   return NULL;
 }
 
-buf_wrap* read_from_player(void* ptr) {
+buf_wrap* read_from_player(void* ptr, bool loop) {
   player* p = reinterpret_cast<player*>(ptr);
-  return p->read();
+  return p->read(loop);
 }
 
 void free_buffer(buf_wrap* ptr) {

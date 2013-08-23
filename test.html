@@ -25,12 +25,17 @@
       player.resume();
     };
 
+    var loopChanged = function() {
+      player.setLooping(this.checked);
+    };
+
     var unloadClicked = function() {
       player.unload();
       document.getElementById("play").removeEventListener('click', playClicked, false);
       document.getElementById("pause").removeEventListener('click', pauseClicked, false);
       document.getElementById("resume").removeEventListener('click', resumeClicked, false);
       document.getElementById("unload").removeEventListener('click', unloadClicked, false);
+      document.getElementById("loop").removeEventListener('change', loopChanged, false);
     };
 
     window.onload = function() {
@@ -42,6 +47,7 @@
           document.getElementById("pause").addEventListener('click', pauseClicked, false);
           document.getElementById("resume").addEventListener('click', resumeClicked, false);
           document.getElementById("unload").addEventListener('click', unloadClicked, false);
+          document.getElementById("loop").addEventListener('change', loopChanged, false);
         });
       }, false);
     }
@@ -53,5 +59,6 @@
   <button id="pause">Pause</button>
   <button id="resume">Resume</button>
   <button id="unload">Unload</button>
+  <input id="loop" type="checkbox">Looping</input>
 </body>
 </html>

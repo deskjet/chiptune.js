@@ -4,7 +4,8 @@
 #include "player.h"
 
 player::player(char* filename):
-  failed_(false)
+  failed_(false),
+  last_loop_(0)
 {
   context_ = xmp_create_context();
   if (xmp_load_module(context_, filename) != 0) {
@@ -23,7 +24,7 @@ player::~player() {
   }
 }
 
-buf_wrap* player::read() {
+buf_wrap* player::read(bool loop) {
   buf_wrap* ret = new buf_wrap();
   ret->buf = NULL;
   ret->size = 0;
@@ -32,13 +33,16 @@ buf_wrap* player::read() {
   if (xmp_play_frame(context_) == 0) {
     xmp_get_frame_info(context_, &frame_info_);
 
-    if (frame_info_.loop_count > 0) {
+    if (!loop && last_loop_ < frame_info_.loop_count) {
       return ret;
     }
 
     ret->buf = frame_info_.buffer;
     ret->size = frame_info_.buffer_size;
+
+    last_loop_ = frame_info_.loop_count;
   }
+
 
   convertToFloat(ret);
   return ret;

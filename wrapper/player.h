@@ -20,7 +20,7 @@ class player {
   virtual ~player();
 
   /// Request for the next chunk of raw music.
-  buf_wrap* read();
+  buf_wrap* read(bool loop);
 
   /// Checks if this object is usable
   bool valid();
@@ -28,6 +28,9 @@ class player {
  private:
   /// libxmp context
   xmp_context context_;
+
+  /// last loop count
+  int last_loop_;
 
   /// Set to false if anything goes wrong.
   bool failed_;

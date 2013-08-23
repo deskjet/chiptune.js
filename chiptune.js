@@ -89,6 +89,10 @@ ChiptunePlayer.prototype.resume = function() {
   this.xmp.resume.bind(this)(this.player_ptr);
 };
 
+// en/disable looping
+ChiptunePlayer.prototype.setLooping = function(looping) {
+  this.xmp.setLooping.bind(this)(this.player_ptr, looping);
+};
 
 // true if player paused
 ChiptunePlayer.prototype.isPaused = function() {
@@ -103,7 +107,7 @@ ChiptunePlayer.prototype.isStopped = function() {
 
 ChiptunePlayer.prototype.xmp = {
   init: Module.cwrap('initialize_player', 'number', ['string']),
-  read: Module.cwrap('read_from_player', 'number', ['number']),
+  read: Module.cwrap('read_from_player', 'number', ['number', 'bool']),
   free_buffer: Module.cwrap('free_buffer', 'null', ['number']),
   free_player: Module.cwrap('free_player', 'null', ['number']),
   player_data: {},
@@ -120,7 +124,7 @@ ChiptunePlayer.prototype.xmp = {
         return new Float32Array(i8Array.buffer, data_ptr, size / 4);
       }
 
-      var buf_ptr = this.xmp.read(player_ptr);
+      var buf_ptr = this.xmp.read(player_ptr, this.xmp.player_data[player_ptr].looping);
       var ret = get_data(buf_ptr);
       this.xmp.free_buffer(buf_ptr);
       return ret;
@@ -223,6 +227,9 @@ ChiptunePlayer.prototype.xmp = {
       this.xmp.play.bind(this)(player_ptr, 0, false, start_time);
     }
   },
+  setLooping: function(player_ptr, looping) {
+    this.xmp.player_data[player_ptr].looping = looping;
+  },
   isPaused: function(player_ptr) {
     try {
       return this.xmp.player_data[player_ptr].pause ? true : false;
@@ -230,7 +237,6 @@ ChiptunePlayer.prototype.xmp = {
       return false;
     }
   },
-
   isStopped: function(player_ptr) {
     try {
       return this.xmp.player_data[player_ptr].stop ? true : false;
