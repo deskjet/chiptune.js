@@ -40,7 +40,9 @@
         fileaccess.ondrop = function(e) {
           var file = e.dataTransfer.files[0];
           try { player.unload(); } catch(err) {};
-          player.load(file, function() {
+
+          var loop = document.getElementById("loop").checked;
+          player.load(file, loop, function() {
             document.querySelector(".loadedfile").innerHTML = file.name;
           });
           e.preventDefault();
@@ -51,7 +53,9 @@
         var demolink = document.querySelector("#demosong");
         demolink.onclick = function() {
           try { player.unload(); } catch(err) {};
-          player.load("tunes/mysteristerium.mod", function() {
+
+          var loop = document.getElementById("loop").checked;
+          player.load("tunes/mysteristerium.mod", loop, function() {
             document.querySelector(".loadedfile").innerHTML = "mysteristerium.mod";
           });
         }
