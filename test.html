@@ -40,7 +40,8 @@
 
     window.onload = function() {
       document.getElementById("files").addEventListener('change', function(evt) {
-        player.load(evt.target.files[0], function(err) {
+        var loop = document.getElementById("loop").checked;
+        player.load(evt.target.files[0], loop, function(err) {
           if (err) { return console.log(err) };
 
           document.getElementById("play").addEventListener('click', playClicked, false);

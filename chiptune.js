@@ -8,12 +8,18 @@ ChiptunePlayer.prototype.generateFilename = function() {
   return "modfile" + this.fileCounter++;
 }
 
-ChiptunePlayer.prototype.load = function load(input, cb) {
+ChiptunePlayer.prototype.load = function load(input, loop, cb) {
   var onFileReady = function onFileReady() {
     this.player_ptr = this.xmp.init(this.path);
     if (this.player_ptr == 0) {
       try { FS.deleteFile(this.path); } catch(err) {};
       return cb("could not initialize player");
+    };
+
+    this.xmp.player_data[this.player_ptr] = {
+      'stop': true,
+      'pause': false,
+      'looping': !!loop
     };
 
     return cb();
@@ -75,6 +81,7 @@ ChiptunePlayer.prototype.play = function() {
   if (this.isPaused() && !this.isStopped()) {
     this.resume();
   } else if (this.isStopped()) {
+    this.xmp.player_data[this.player_ptr].stop = false;
     this.xmp.play.bind(this)(this.player_ptr, 0, true);
   }
 };
@@ -158,7 +165,6 @@ ChiptunePlayer.prototype.xmp = {
   play: function(player_ptr, last_chunk_start, first_run, fixed_time) {
     // Fill buffer on first run
     if (first_run) {
-      this.xmp.player_data[player_ptr] = {};
       this.xmp.player_data[player_ptr].next_src = this.xmp.get_audio_source.bind(this)(player_ptr);
     }
 
