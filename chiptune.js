@@ -205,7 +205,6 @@ ChiptunePlayer.prototype.xmp = {
     if (this.xmp.player_data[player_ptr]) {
       this.xmp.player_data[player_ptr].last_src && this.xmp.player_data[player_ptr].last_src.stop(0);
       this.xmp.player_data[player_ptr].current_src && this.xmp.player_data[player_ptr].current_src.stop(0);
-      this.xmp.player_data[player_ptr].next_src && this.xmp.player_data[player_ptr].next_src.stop(0);
       this.xmp.player_data[player_ptr].pause = context.currentTime;
       clearTimeout(this.xmp.player_data[player_ptr].timerId);
     }
