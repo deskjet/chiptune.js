@@ -1,5 +1,7 @@
 # Chiptune.js
 
+## I highly recomend using [chiptune2.js](https://github.com/deskjet/chiptune2.js) which fixes some important issues with this project.
+
 This is a javascript library that can play module music files. It is based on the [libxmp](https://github.com/cmatsuoka/libxmp) C library. To translate libxmp into Javascript [emscripten](https://github.com/kripken/emscripten) was used. Audio output is implemented with the Web Audio API as specified by W3C.
 
 ## Features
